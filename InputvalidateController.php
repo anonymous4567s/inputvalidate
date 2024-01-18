@@ -155,7 +155,7 @@ class InputvalidateController extends Controller
      * @param $mode 處理模式，0:不做格式驗證，1:做mobile格式驗證
      * @return array
      */
-    public function textDataHandle($text, $type1 = 0, $type2 = 0, $mode = 0)
+    public function textDataHandle($text, $mode = 0, $type1 = 0, $type2 = 0, $len = 0)
     {
         //全形轉半形
         $text = $this->conver_str($text);
@@ -163,7 +163,7 @@ class InputvalidateController extends Controller
         $response["text"] = $this->removeSpace($text);
 
         if ($mode == 1) {
-            $response["validation"] = $this->textValidate($text);
+            $response["validation"] = $this->textValidate($text, $type1, $type2, $len);
         }
 
         return $response;
