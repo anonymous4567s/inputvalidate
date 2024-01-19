@@ -110,10 +110,11 @@ class InputvalidateController extends Controller
      * @param $text 文字內容
      * @param $type1 驗證類型，0:英數，1:英文，2:數字
      * @param $type2 允許符號，0:不允許，1:允許
-     * @param $mode 處理模式，0:不做格式驗證，1:做格式驗證
+     * @param $allowable_tags 允許的符號
+     * @param $len 限制字串長度
      * @return bool
      */
-    public function textValidate($text, $type1 = 0, $type2 = 0, $len=0)
+    public function textValidate($text, $type1 = 0, $type2 = 0, $allowable_tags, $len=0)
     {
         $check = true;
         if ($len > 0)
@@ -127,10 +128,17 @@ class InputvalidateController extends Controller
         }
         elseif ($check && $type2 == 1)
         {
-            // 不允許的特殊符號
-            $reject = '';
-            $pattern = "/^([\w".$reject."]*)$/";
-            $check = !(bool)preg_match($pattern, $text);
+            // 引入不允許的特殊符號
+            include('inputValidate.conf.php');
+            // 排除不允許的特殊符號
+            foreach ($reject_text_tags as $tag) {
+                $allowable_tags = str_replace($tag, '', $allowable_tags);
+            }
+            // 排除傳入字串中允許的特殊符號
+            $pattern = "/([\w".$allowable_tags."]*)/i";
+            $str = preg_replace($pattern, "", $text);
+            // 檢查字串中還有沒有特殊符號
+            $check = !(bool)preg_match("/^([\W]*)$/", $str);
         }
         if ($check)
         {
@@ -155,7 +163,7 @@ class InputvalidateController extends Controller
      * @param $mode 處理模式，0:不做格式驗證，1:做mobile格式驗證
      * @return array
      */
-    public function textDataHandle($text, $mode = 0, $type1 = 0, $type2 = 0, $len = 0)
+    public function textDataHandle($text, $type1 = 0, $type2 = 0, $mode = 0)
     {
         //全形轉半形
         $text = $this->conver_str($text);
@@ -163,7 +171,7 @@ class InputvalidateController extends Controller
         $response["text"] = $this->removeSpace($text);
 
         if ($mode == 1) {
-            $response["validation"] = $this->textValidate($text, $type1, $type2, $len);
+            $response["validation"] = $this->textValidate($text);
         }
 
         return $response;
@@ -231,11 +239,9 @@ class InputvalidateController extends Controller
                 }
             }
         }
-        // 不允許的tags
-        $reject_tags = [
-            '<script>','<style>','<iframe>','<source>',
-        ];
-        foreach ($reject_tags as $tag) {
+        // 引入不允許的html tags
+        include('inputValidate.conf.php');
+        foreach ($reject_html_tags as $tag) {
             $allowable_tags = str_replace($tag, '', $allowable_tags);
         }
         // 保留$allowable_tags
